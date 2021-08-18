@@ -49,8 +49,9 @@ EOF
     )
 
     SOONG_LIBRARIES=(
-        libcrypto-host.so
         libelf.so
+        libopenssl_crypto.so
+        libopenssl_ssl.so
     )
 
     binaries="${SOONG_BINARIES[@]/#/${SOONG_HOST_OUT}/bin/}"
@@ -73,7 +74,7 @@ EOF
     # Stage include files
     include_dir=${SOONG_OUT}/dist/include
     mkdir -p ${include_dir}/openssl/
-    cp -a ${TOP}/external/boringssl/include/openssl/* ${include_dir}/openssl/
+    cp -a ${TOP}/external/openssl/include/openssl/* ${include_dir}/openssl/
 
     # The elfutils header locations are messy; just make them match
     # common Linux distributions, as this is what Linux expects
@@ -95,7 +96,8 @@ EOF
     # Patch dist dir
     (
       cd ${SOONG_OUT}/dist/
-      ln -sf libcrypto-host.so lib64/libcrypto.so
+      ln -sf libopenssl_crypto.so lib64/libcrypto.so
+      ln -sf libopenssl_ssl.so lib64/libssl.so
     )
 
     # Package prebuilts
