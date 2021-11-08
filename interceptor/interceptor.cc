@@ -44,6 +44,9 @@ static void process_command(const char* filename, char* const argv[], char* cons
 // log command if logging is enabled
 static void log(const interceptor::Command&, const std::string& prefix);
 
+// execute potentially modified command
+static void exec(const interceptor::Command&);
+
 // OVERLOADS for LD_PRELOAD USE
 
 // Intercept execve calls, for that capture the original execve call
@@ -134,6 +137,9 @@ static void process_command(const char* filename, char* const argv[], char* cons
 
   interceptor::Command command(filename, argv, envp);
   log(command, "");
+
+  // pass down the transformed command to execve
+  exec(command);
 }
 
 static void log(const interceptor::Command& command, const std::string& prefix) {
@@ -146,4 +152,17 @@ static void log(const interceptor::Command& command, const std::string& prefix) 
       file << prefix << command.repr() << ",\n";
     }
   }
+}
+
+static void exec(const interceptor::Command& command) {
+  std::vector<const char*> c_args;
+  c_args.reserve(command.args().size() + 1);
+  c_args[command.args().size()] = nullptr;
+  for (const auto& arg : command.args()) {
+    c_args.push_back(arg.data());
+  }
+  // TODO: at this point, we could free some memory that is held in Command.
+  //       While the args vector is reused for args, we could free the EnvMap
+  //       and the original args.
+  old_execve(command.program().c_str(), const_cast<char**>(c_args.data()), command.envp());
 }
