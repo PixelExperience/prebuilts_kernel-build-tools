@@ -35,6 +35,7 @@ namespace fs = std::filesystem;
 
 // Options passed via environment variables from the interceptor starter
 constexpr static auto ENV_command_log = "INTERCEPTOR_command_log";
+constexpr static auto ENV_root_dir = "INTERCEPTOR_root_dir";
 
 // UTILITY function declarations
 
@@ -121,6 +122,45 @@ std::string Command::repr() const {
   os << "}";
   return os.str();
 }
+
+void Command::make_relative() {
+  // determine the ROOT_DIR
+  std::string root_dir;
+  if (auto it = env().find(ENV_root_dir); it != env().cend()) {
+    root_dir = it->second;
+    if (root_dir[root_dir.size() - 1] != '/') root_dir += '/';
+  } else {
+    return;
+  }
+
+  // determine the relative path to ROOT_DIR from the current working dir
+  std::string rel_root = fs::relative(root_dir);
+  if (rel_root[rel_root.size() - 1] != '/') rel_root += '/';
+  if (rel_root == "./") rel_root = "";
+
+  // TODO: This is generally bad as this means we can't make anything relative.
+  // This happens if the out dir is outside of the root.
+  if (rel_root.find(root_dir) != std::string::npos) {
+    return;
+  }
+
+  cwd_ = fs::relative(cwd_, root_dir);
+
+  // replacement functor
+  const auto replace_all = [&](auto& str) {
+    auto pos = std::string::npos;
+    while ((pos = str.find(root_dir)) != std::string::npos) {
+      str.replace(pos, root_dir.length(), rel_root);
+    }
+  };
+
+  if (!args_.has_value()) args();
+
+  // now go and replace everything
+  replace_all(program_);
+  std::for_each(args_->begin(), args_->end(), replace_all);
+}
+
 }  // namespace interceptor
 
 /// UTILITY FUNCTIONS
@@ -133,9 +173,15 @@ static void process_command(const char* filename, char* const argv[], char* cons
     return;
   }
 
-  // Ok, we can handle that one, let's log it.
+  // Ok, we can handle that one, let's transform it.
 
   interceptor::Command command(filename, argv, envp);
+
+  // rewrite all command line arguments (including the program itself) to use
+  // paths relative to ROOT_DIR. This is essential for reproducible builds and
+  // furthermore necessary to produce cache hits in RBE.
+  command.make_relative();
+
   log(command, "");
 
   // pass down the transformed command to execve

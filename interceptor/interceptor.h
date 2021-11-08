@@ -41,6 +41,9 @@ class Command {
 
   std::string repr() const;
 
+  // make command line calls relative to ROOT_DIR
+  void make_relative();
+
  private:
   std::string program_;
   std::string cwd_;

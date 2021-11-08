@@ -43,6 +43,13 @@ if [ -n "$COMMAND_LOG" ]; then
     echo "[" > "$INTERCEPTOR_command_log"
 fi
 
+# If ROOT_DIR is not set, assume the current working directory is it
+if [ -z "$ROOT_DIR" ]; then
+    export INTERCEPTOR_root_dir=$(pwd)
+else
+    export INTERCEPTOR_root_dir=$ROOT_DIR
+fi
+
 # Discover the interceptor preload library
 export LD_PRELOAD=$(realpath $(dirname $(readlink -f $0))/../lib64/libinterceptor.so)
 if [ ! -x "$LD_PRELOAD" ]; then
