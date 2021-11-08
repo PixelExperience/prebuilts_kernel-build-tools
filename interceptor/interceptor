@@ -23,11 +23,25 @@ while [ $# -gt 0 ]; do
         shift
         break
         ;;
+    -l|--command-log)
+        COMMAND_LOG=$2
+        shift  # past argument
+        shift  # past value
+        ;;
     *)
         break
         ;;
     esac
 done
+
+# Handle the command log
+#
+# Due to the interceptor being active from any working directory, we need to
+# capture the current working directory and make the command log path absolute.
+if [ -n "$COMMAND_LOG" ]; then
+    export INTERCEPTOR_command_log=$(realpath $COMMAND_LOG)
+    echo "[" > "$INTERCEPTOR_command_log"
+fi
 
 # Discover the interceptor preload library
 export LD_PRELOAD=$(realpath $(dirname $(readlink -f $0))/../lib64/libinterceptor.so)
@@ -39,3 +53,7 @@ fi
 # Spawn the actual command in a subshell to capture possibly set environment
 # variables, e.g. `interceptor MY_ENV=123 command_to_execute`
 sh -c "$*"
+
+if [ -n "$COMMAND_LOG" ]; then
+    echo "]" >> "$INTERCEPTOR_command_log"
+fi

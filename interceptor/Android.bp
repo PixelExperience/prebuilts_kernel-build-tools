@@ -3,6 +3,7 @@ cc_library_host_shared {
     srcs: ["interceptor.cc"],
     static_libs: [
         "libc++fs",
+        "libbase",
     ],
 }
 

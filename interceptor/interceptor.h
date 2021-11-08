@@ -39,6 +39,8 @@ class Command {
 
   char* const* envp() const { return envp_; };
 
+  std::string repr() const;
+
  private:
   std::string program_;
   std::string cwd_;
