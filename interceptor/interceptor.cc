@@ -20,13 +20,18 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include <android-base/strings.h>
@@ -161,6 +166,116 @@ void Command::make_relative() {
   std::for_each(args_->begin(), args_->end(), replace_all);
 }
 
+static AnalysisResult analyze_command(const interceptor::Command& command);
+
+void Command::analyze() {
+  auto [inputs, outputs] = analyze_command(*this);
+
+  // TODO: this sanitizing should be done during make_relative
+  for (auto& input : inputs) {
+    if (input.rfind("./", 0) == 0) {
+      input = input.substr(2);
+    }
+  }
+  for (auto& output : outputs) {
+    if (output.rfind("./", 0) == 0) {
+      output = output.substr(2);
+    }
+  }
+  for (const auto& input : inputs) {
+    if (!fs::is_regular_file(input)) {
+      std::cerr << "missing input: " << input << "\n";
+      std::cerr << Command::repr() << "\n";
+      exit(1);
+    }
+  }
+
+  inputs_ = std::move(inputs);
+  outputs_ = std::move(outputs);
+}
+
+/// COMMAND ANALYSIS
+
+using Analyzer = std::function<AnalysisResult(const std::string&, const ArgVec&, const EnvMap&)>;
+
+static AnalysisResult analyze_compiler_linker(const std::string&, const ArgVec& args,
+                                              const EnvMap&) {
+  static constexpr std::array kSkipNextArgs{
+      "-isystem", "-I", "-L", "-m", "-soname", "-z",
+  };
+  static constexpr std::string_view kOutputOption = "-Wp,-MMD,";
+
+  AnalysisResult result;
+  bool next_is_out = false;
+  bool skip_next = false;
+  // skip args[0] as this is the program itself
+  for (auto it = args.cbegin() + 1; it != args.cend(); ++it) {
+    const auto& arg = *it;
+    if (arg == "-o") {
+      next_is_out = true;
+      continue;
+    }
+    if (next_is_out) {
+      result.outputs.push_back(arg);
+      next_is_out = false;
+      continue;
+    }
+    if (arg.rfind(kOutputOption, 0) == 0) {
+      result.outputs.push_back(arg.substr(kOutputOption.size()));
+    }
+    if (skip_next) {
+      skip_next = false;
+      continue;
+    }
+    if (std::find(kSkipNextArgs.cbegin(), kSkipNextArgs.cend(), arg) != kSkipNextArgs.cend()) {
+      skip_next = true;
+    }
+    // ignore test compilations
+    if (arg == "/dev/null" || arg == "-") {
+      return {};
+    }
+    if (arg[0] == '-') {  // ignore flags
+      continue;
+    }
+    result.inputs.push_back(arg);
+  }
+
+  return result;
+}
+
+static AnalysisResult analyze_archiver(const std::string&, const ArgVec& args, const EnvMap&) {
+  AnalysisResult result;
+
+  if (args.size() < 3) return result;
+  // skip args[0] as this is the program itself
+  // skip args[1] are the archiver flags
+  // args[2] is the output
+  result.outputs.push_back(args[2]);
+  // args[3:] are the inputs
+  result.inputs.insert(result.inputs.cend(), args.cbegin() + 3, args.cend());
+  return result;
+}
+
+static const std::initializer_list<std::pair<std::regex, Analyzer>> analyzers{
+    {
+        std::regex("^(.*/)?(clang|clang\\+\\+|gcc|g\\+\\+|ld(\\.lld)?|llvm-strip)$"),
+        analyze_compiler_linker,
+    },
+    {
+        std::regex("^(.*/)?(llvm-)?ar$"),
+        analyze_archiver,
+    },
+};
+
+static AnalysisResult analyze_command(const Command& command) {
+  for (const auto& [regex, analyzer] : analyzers) {
+    if (std::regex_match(command.args()[0], regex)) {
+      return analyzer(command.program(), command.args(), command.env());
+    }
+  }
+  return {};
+}
+
 }  // namespace interceptor
 
 /// UTILITY FUNCTIONS
@@ -181,6 +296,8 @@ static void process_command(const char* filename, char* const argv[], char* cons
   // paths relative to ROOT_DIR. This is essential for reproducible builds and
   // furthermore necessary to produce cache hits in RBE.
   command.make_relative();
+
+  command.analyze();
 
   log(command, "");
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -24,6 +25,9 @@ namespace interceptor {
 // Some type definitions to gain some type safety
 using ArgVec = std::vector<std::string>;
 using EnvMap = std::unordered_map<std::string, std::string>;
+
+using Inputs = std::vector<std::string>;
+using Outputs = Inputs;
 
 // Command abstraction
 //
@@ -39,10 +43,16 @@ class Command {
 
   char* const* envp() const { return envp_; };
 
+  const Inputs& inputs() const { return inputs_; }
+  const Outputs& outputs() const { return outputs_; }
+
   std::string repr() const;
 
   // make command line calls relative to ROOT_DIR
   void make_relative();
+
+  // determine inputs/outputs
+  void analyze();
 
  private:
   std::string program_;
@@ -53,6 +63,15 @@ class Command {
 
   mutable std::optional<ArgVec> args_;
   mutable std::optional<EnvMap> env_;
+
+  Inputs inputs_;
+  Outputs outputs_;
 };
 
+// Command analysis
+
+struct AnalysisResult {
+  Inputs inputs;
+  Outputs outputs;
+};
 }  // namespace interceptor
