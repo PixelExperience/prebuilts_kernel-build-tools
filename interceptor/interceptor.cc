@@ -110,6 +110,20 @@ static std::string escape(std::string in) {
   return in;
 }
 
+template <typename T>
+static void dump_vector(std::ostream& os, const char* key, const std::vector<T>& vec) {
+  os << std::quoted(key) << ": [";
+  bool comma = false;
+  for (const auto& e : vec) {
+    if (comma) {
+      os << ", ";
+    }
+    os << std::quoted(e);
+    comma = true;
+  }
+  os << "]";
+}
+
 std::string Command::repr() const {
   std::ostringstream os;
   os << R"({"cmd": )";
@@ -121,6 +135,11 @@ std::string Command::repr() const {
                    escape);
     os << std::quoted(cmd.str());
   }
+
+  os << ", ";
+  dump_vector(os, "in", inputs());
+  os << ", ";
+  dump_vector(os, "out", outputs());
 
   os << R"(, "cwd": )" << std::quoted(cwd_);
 
