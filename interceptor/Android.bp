@@ -7,8 +7,10 @@ cc_library_host_shared {
     ],
 }
 
-sh_binary_host {
+cc_binary_host {
     name: "interceptor",
-    src: "interceptor",
+    srcs: ["main.cc",],
+    static_libs: [
+        "libc++fs",
+    ],
 }
-
