@@ -38,10 +38,6 @@
 
 namespace fs = std::filesystem;
 
-// Options passed via environment variables from the interceptor starter
-constexpr static auto ENV_command_log = "INTERCEPTOR_command_log";
-constexpr static auto ENV_root_dir = "INTERCEPTOR_root_dir";
-
 // UTILITY function declarations
 
 // process applicable calls (i.e. programs that we might be able to handle)

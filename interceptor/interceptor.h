@@ -20,6 +20,10 @@
 #include <unordered_map>
 #include <vector>
 
+// Options passed via environment variables from the interceptor starter
+constexpr static auto ENV_command_log = "INTERCEPTOR_command_log";
+constexpr static auto ENV_root_dir = "INTERCEPTOR_root_dir";
+
 namespace interceptor {
 
 // Some type definitions to gain some type safety
