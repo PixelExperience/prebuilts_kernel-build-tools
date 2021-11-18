@@ -2,6 +2,8 @@ cc_defaults {
     name: "interceptor_defaults",
     static_libs: [
         "libc++fs",
+        "libinterceptor_log",
+        "libprotobuf-cpp-full",
     ],
 }
 

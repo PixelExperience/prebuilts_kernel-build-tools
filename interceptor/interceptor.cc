@@ -35,6 +35,7 @@
 #include <utility>
 
 #include <android-base/strings.h>
+#include <google/protobuf/util/delimited_message_util.h>
 
 namespace fs = std::filesystem;
 
@@ -44,7 +45,7 @@ namespace fs = std::filesystem;
 static void process_command(const char* filename, char* const argv[], char* const envp[]);
 
 // log command if logging is enabled
-static void log(const interceptor::Command&, const std::string& prefix);
+static void log(const interceptor::Command&);
 
 // execute potentially modified command
 static void exec(const interceptor::Command&);
@@ -142,6 +143,19 @@ std::string Command::repr() const {
 
   os << "}";
   return os.str();
+}
+
+log::Message Command::message() const {
+  log::Message result;
+  auto& command = *result.mutable_command();
+
+  command.set_program(program_);
+  *command.mutable_args() = {args().cbegin(), args().cend()};
+  command.set_current_dir(cwd_);
+  *command.mutable_outputs() = {outputs().cbegin(), outputs().cend()};
+  *command.mutable_inputs() = {inputs().cbegin(), inputs().cend()};
+
+  return result;
 }
 
 void Command::make_relative() {
@@ -315,20 +329,21 @@ static void process_command(const char* filename, char* const argv[], char* cons
 
   command.analyze();
 
-  log(command, "");
+  log(command);
 
   // pass down the transformed command to execve
   exec(command);
 }
 
-static void log(const interceptor::Command& command, const std::string& prefix) {
+static void log(const interceptor::Command& command) {
   const auto& env = command.env();
 
   if (const auto env_it = env.find(ENV_command_log); env_it != env.cend()) {
     std::ofstream file;
-    file.open(std::string(env_it->second), std::ofstream::out | std::ofstream::app);
+    file.open(std::string(env_it->second),
+              std::ofstream::out | std::ofstream::app | std::ofstream::binary);
     if (file.is_open()) {
-      file << prefix << command.repr() << ",\n";
+      google::protobuf::util::SerializeDelimitedToOstream(command.message(), &file);
     }
   }
 }

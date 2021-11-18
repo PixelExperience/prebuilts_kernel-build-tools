@@ -20,6 +20,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "log.pb.h"
+
 // Options passed via environment variables from the interceptor starter
 constexpr static auto ENV_command_log = "INTERCEPTOR_command_log";
 constexpr static auto ENV_root_dir = "INTERCEPTOR_root_dir";
@@ -51,6 +53,7 @@ class Command {
   const Outputs& outputs() const { return outputs_; }
 
   std::string repr() const;
+  log::Message message() const;
 
   // make command line calls relative to ROOT_DIR
   void make_relative();
