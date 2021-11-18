@@ -1,16 +1,21 @@
+cc_defaults {
+    name: "interceptor_defaults",
+    static_libs: [
+        "libc++fs",
+    ],
+}
+
 cc_library_host_shared {
     name: "libinterceptor",
     srcs: ["interceptor.cc"],
+    defaults: ["interceptor_defaults"],
     static_libs: [
-        "libc++fs",
         "libbase",
     ],
 }
 
 cc_binary_host {
     name: "interceptor",
-    srcs: ["main.cc",],
-    static_libs: [
-        "libc++fs",
-    ],
+    srcs: ["main.cc"],
+    defaults: ["interceptor_defaults"],
 }
