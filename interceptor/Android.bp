@@ -14,6 +14,17 @@ cc_library_host_shared {
     ],
 }
 
+cc_library_host_static {
+    name: "libinterceptor_log",
+    srcs: ["log.proto"],
+    proto: {
+        type: "full",
+        static: true,
+        export_proto_headers: true,
+        canonical_path_from_root: false,
+    },
+}
+
 cc_binary_host {
     name: "interceptor",
     srcs: ["main.cc"],
