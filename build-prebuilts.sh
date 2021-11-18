@@ -37,6 +37,7 @@ EOF
         e2fsdroid
         img2simg
         interceptor
+        interceptor_analysis
         lpmake
         lz4
         mkbootfs

@@ -32,3 +32,9 @@ cc_binary_host {
     srcs: ["main.cc"],
     defaults: ["interceptor_defaults"],
 }
+
+cc_binary_host {
+    name: "interceptor_analysis",
+    srcs: ["analysis.cc",],
+    defaults: ["interceptor_defaults",],
+}
