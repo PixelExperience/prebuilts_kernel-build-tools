@@ -120,17 +120,18 @@ static void dump_vector(std::ostream& os, const char* key, const std::vector<T>&
   os << "]";
 }
 
+std::string Command::command() const {
+  std::ostringstream cmd;
+  cmd << program();
+  if (args().size() > 1) cmd << ' ';
+  std::transform(args().cbegin() + 1, args().cend(), std::ostream_iterator<std::string>(cmd, " "),
+                 escape);
+  return cmd.str();
+}
+
 std::string Command::repr() const {
   std::ostringstream os;
-  os << R"({"cmd": )";
-  {
-    std::ostringstream cmd;
-    cmd << program();
-    if (args().size() > 1) cmd << ' ';
-    std::transform(args().cbegin() + 1, args().cend(), std::ostream_iterator<std::string>(cmd, " "),
-                   escape);
-    os << std::quoted(cmd.str());
-  }
+  os << R"({"cmd": )" << std::quoted(command());
 
   os << ", ";
   dump_vector(os, "in", inputs());

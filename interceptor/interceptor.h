@@ -59,6 +59,8 @@ class Command {
   void analyze();
 
  private:
+  std::string command() const;
+
   std::string program_;
   std::string cwd_;
 
