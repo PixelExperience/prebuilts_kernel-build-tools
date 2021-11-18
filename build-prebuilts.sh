@@ -42,6 +42,7 @@ EOF
         mkbootfs
         mkdtboimg.py
         mke2fs
+        mkfs.erofs
         mkuserimg_mke2fs
         pahole
         simg2img
