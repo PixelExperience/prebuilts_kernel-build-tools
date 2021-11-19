@@ -50,6 +50,9 @@ cc_binary_host {
 
 cc_binary_host {
     name: "interceptor_analysis",
-    srcs: ["analysis.cc",],
-    defaults: ["interceptor_defaults",],
+    srcs: ["analysis.cc"],
+    defaults: ["interceptor_defaults"],
+
+    // unused parameters in protobuf/stubs/bytestream.h
+    cflags: ["-Wno-error=unused-parameter"],
 }

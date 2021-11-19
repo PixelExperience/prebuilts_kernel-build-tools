@@ -16,6 +16,7 @@
 
 #include <getopt.h>
 #include <google/protobuf/text_format.h>
+#include <google/protobuf/util/json_util.h>
 #include <sysexits.h>
 #include <cstdlib>
 #include <cstring>
@@ -23,12 +24,13 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <unordered_set>
 
 #include "log.pb.h"
 
 namespace fs = std::filesystem;
 
-enum class OutputFormat { TEXT };
+enum class OutputFormat { TEXT, COMPDB };
 
 struct Options {
   fs::path command_log;
@@ -49,12 +51,12 @@ static Options parse_args(int argc, char* argv[]) {
     std::cerr << "usage: " << argv[0] << '\n'
               << "  -l|--command-log filename\n"
               << "  -o|--output filename\n"
-              << " [-t|--output-type (text)]\n";
+              << " [-t|--output-type (text|compdb)]\n";
     exit(EX_USAGE);
   };
   while (true) {
     int ix;
-    int c = getopt_long(argc, argv, "-l:f:o:", opts, &ix);
+    int c = getopt_long(argc, argv, "-l:t:o:", opts, &ix);
     if (c == -1) break;
     switch (c) {
       case 'l':
@@ -63,6 +65,8 @@ static Options parse_args(int argc, char* argv[]) {
       case 't':
         if (strcmp(optarg, "text") == 0)
           result.output_format = OutputFormat::TEXT;
+        if (strcmp(optarg, "compdb") == 0)
+          result.output_format = OutputFormat::COMPDB;
         else
           usage();
         break;
@@ -111,6 +115,80 @@ void text_to_file(const interceptor::log::Log& log, const fs::path& output) {
   }
 }
 
+void compdb_to_file(const interceptor::log::Log& log, const fs::path& output) {
+  static const std::unordered_set<std::string_view> COMPILE_EXTENSIONS = {
+      ".c", ".cc", ".cpp", ".cxx", ".S",
+  };
+  static const std::unordered_set<std::string_view> COMPILERS = {
+      "clang",
+      "clang++",
+      "gcc",
+      "g++",
+  };
+
+  interceptor::log::CompilationDatabase compdb;
+
+  for (const auto& command : log.commands()) {
+    // skip anything that is not a compiler invocation
+    if (!COMPILERS.count(fs::path(command.args(0)).filename().native())) continue;
+
+    // determine if we have a uniquely identifyable output
+    const std::string single_output = [&]() {
+      std::vector<std::string> outputs;
+      for (const auto& output : command.outputs()) {
+        // skip .d files. They are conventionally used for make dependency files
+        if (fs::path(output).extension() != ".d") {
+          outputs.push_back(output);
+        }
+      }
+      return (outputs.size() == 1) ? outputs[0] : "";
+    }();
+
+    // skip preprocessor invocations
+    if (std::find(command.args().cbegin(), command.args().cend(), "-E") != command.args().cend())
+      continue;
+
+    // now iterate over all inputs, emitting an entry for each source file
+    for (const auto& input : command.inputs()) {
+      // skip anything that does not look like a source file (object files,
+      // force included headers, etc.)
+      if (!COMPILE_EXTENSIONS.count(fs::path(input).extension().native())) continue;
+
+      // ok, now we have a new command
+      auto& compile_command = *compdb.add_commands();
+
+      compile_command.set_directory(fs::path(log.root_dir()) / command.current_dir());
+      compile_command.set_file(input);
+      if (!single_output.empty()) compile_command.set_output(single_output);
+      *compile_command.mutable_arguments() = {command.args().cbegin(), command.args().cend()};
+    }
+  }
+
+  std::ofstream out(output);
+
+  if (!compdb.commands_size()) {
+    out << "[]\n";
+    return;
+  }
+
+  std::string out_str;
+  auto options = google::protobuf::util::JsonPrintOptions{};
+  options.add_whitespace = true;
+  google::protobuf::util::MessageToJsonString(compdb, &out_str, options);
+
+  // this would emit {"command":[yadayada]}, but we want only [yadayada]
+  // the additional characters come from options.add_whitespace
+  //
+  // TODO: make this better, but as of now there is not much we can do as
+  // util::MessageToJsonString() takes a message and that is always represented
+  // as a dictionary, while the top level structure of compile_command.json is
+  // an array. So, we have to chop of the leading and trailing characters to
+  // find the contained array.
+  const auto left_offset = out_str.find('[');
+  const auto length = out_str.rfind(']') - left_offset + 1;
+  out << std::string_view(out_str).substr(left_offset, length);
+}
+
 int main(int argc, char* argv[]) {
   const auto options = parse_args(argc, argv);
   const auto log = read_log(options.command_log);
@@ -118,6 +196,9 @@ int main(int argc, char* argv[]) {
   switch (options.output_format) {
     case OutputFormat::TEXT:
       text_to_file(log, options.output);
+      break;
+    case OutputFormat::COMPDB:
+      compdb_to_file(log, options.output);
       break;
   }
 }

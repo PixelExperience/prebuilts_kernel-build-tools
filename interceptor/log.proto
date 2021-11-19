@@ -38,3 +38,17 @@ message Log {
   string root_dir = 1;  // ${ROOT_DIR} or cwd() if unset
   repeated Command commands = 2;
 }
+
+// A compile_command.json entry as specified in
+// https://clang.llvm.org/docs/JSONCompilationDatabase.html
+message CompileCommand {
+  string directory = 1;
+  string file = 2;
+  string command = 3;
+  repeated string arguments = 4;
+  string output = 5;
+}
+
+message CompilationDatabase {
+  repeated CompileCommand commands = 1;
+}
