@@ -87,20 +87,26 @@ static void setup_interceptor_library_path() {
   setenv("LD_PRELOAD", interceptor_library.c_str(), 1);
 }
 
-static void setup_root_dir() {
+static fs::path setup_root_dir() {
   const auto root_dir = getenv("ROOT_DIR");
+  fs::path result;
   if (root_dir != nullptr)
-    setenv(ENV_root_dir, root_dir, 1);
+    result = root_dir;
   else
-    setenv(ENV_root_dir, fs::current_path().c_str(), 1);
+    result = fs::current_path();
+
+  setenv(ENV_root_dir, result.c_str(), 1);
+
+  return result;
 }
 
 class CommandLog {
   const decltype(Options::command_log) command_log_file_;
+  const fs::path root_dir_;
 
  public:
-  CommandLog(decltype(command_log_file_) command_log_file)
-      : command_log_file_(std::move(command_log_file)) {
+  CommandLog(decltype(command_log_file_) command_log_file, const fs::path& root_dir)
+      : command_log_file_(std::move(command_log_file)), root_dir_(root_dir) {
     if (command_log_file_) {
       setenv(ENV_command_log, command_log_file_->c_str(), 1);
       std::ofstream command_log(command_log_file_->c_str(), std::ios_base::trunc);
@@ -116,6 +122,7 @@ class CommandLog {
       // compact the log by re-reading the individual log::Message's to combine
       // them to a log::Log
       interceptor::log::Log log;
+      log.set_root_dir(root_dir_);
       {
         std::ifstream command_log(command_log_file_->c_str(), std::ios_base::binary);
 
@@ -138,9 +145,9 @@ int main(int argc, char* argv[]) {
   const auto& options = parse_args(argc, argv);
 
   setup_interceptor_library_path();
-  setup_root_dir();
+  const auto root_dir = setup_root_dir();
 
-  CommandLog command_log(options.command_log);
+  CommandLog command_log(options.command_log, root_dir);
 
   // TODO: cleanly to google::protobuf::ShutdownProtobufLibrary();
 

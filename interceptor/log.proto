@@ -35,5 +35,6 @@ message Message {
 
 // The entirety of a the final log should be stored as just this Log.
 message Log {
-  repeated Command commands = 1;
+  string root_dir = 1;  // ${ROOT_DIR} or cwd() if unset
+  repeated Command commands = 2;
 }
