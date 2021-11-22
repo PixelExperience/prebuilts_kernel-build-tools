@@ -16,15 +16,16 @@
 
 syntax = "proto3";
 
-package interceptor.log;
+package interceptor;
 
 // A Command as traced by intercepting an execve() invocation.
 message Command {
   string program = 1;
   repeated string args = 2;
-  string current_dir = 3;
-  repeated string inputs = 4;
-  repeated string outputs = 5;
+  map<string, string> env_vars = 3;
+  string current_dir = 4;
+  repeated string inputs = 5;
+  repeated string outputs = 6;
 };
 
 // A single message as emitted by an intercepted process. It can contain any of

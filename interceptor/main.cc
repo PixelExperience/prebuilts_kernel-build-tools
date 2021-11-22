@@ -121,13 +121,13 @@ class CommandLog {
     if (command_log_file_) {
       // compact the log by re-reading the individual log::Message's to combine
       // them to a log::Log
-      interceptor::log::Log log;
+      interceptor::Log log;
       log.set_root_dir(root_dir_);
       {
         std::ifstream command_log(command_log_file_->c_str(), std::ios_base::binary);
 
         google::protobuf::io::IstreamInputStream input_stream(&command_log);
-        interceptor::log::Message message;
+        interceptor::Message message;
         while (true) {
           if (!google::protobuf::util::ParseDelimitedFromZeroCopyStream(&message, &input_stream,
                                                                         nullptr))

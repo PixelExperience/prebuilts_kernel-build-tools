@@ -17,6 +17,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -29,53 +30,11 @@ constexpr static auto ENV_root_dir = "INTERCEPTOR_root_dir";
 namespace interceptor {
 
 // Some type definitions to gain some type safety
-using ArgVec = std::vector<std::string>;
-using EnvMap = std::unordered_map<std::string, std::string>;
+using ArgVec = std::remove_pointer_t<decltype(Command().mutable_args())>;
+using EnvMap = std::remove_pointer_t<decltype(Command().mutable_env_vars())>;
 
 using Inputs = std::vector<std::string>;
 using Outputs = Inputs;
-
-// Command abstraction
-//
-// This is a utility container to keep program, args and env in an accessible
-// fashion. Most data structures are created lazily.
-class Command {
- public:
-  Command(const char* program, char* const argv[], char* const envp[]);
-
-  const std::string& program() const;
-  const ArgVec& args() const;
-  const EnvMap& env() const;
-
-  char* const* envp() const { return envp_; };
-
-  const Inputs& inputs() const { return inputs_; }
-  const Outputs& outputs() const { return outputs_; }
-
-  std::string repr() const;
-  log::Message message() const;
-
-  // make command line calls relative to ROOT_DIR
-  void make_relative();
-
-  // determine inputs/outputs
-  void analyze();
-
- private:
-  std::string command() const;
-
-  std::string program_;
-  std::string cwd_;
-
-  char* const* argv_;
-  char* const* envp_;
-
-  mutable std::optional<ArgVec> args_;
-  mutable std::optional<EnvMap> env_;
-
-  Inputs inputs_;
-  Outputs outputs_;
-};
 
 // Command analysis
 

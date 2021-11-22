@@ -89,8 +89,8 @@ static Options parse_args(int argc, char* argv[]) {
   return result;
 }
 
-interceptor::log::Log read_log(const fs::path& log_file) {
-  interceptor::log::Log result;
+interceptor::Log read_log(const fs::path& log_file) {
+  interceptor::Log result;
   std::ifstream input(log_file);
   if (!input) {
     std::cerr << "Could not open input file for reading.\n";
@@ -100,7 +100,7 @@ interceptor::log::Log read_log(const fs::path& log_file) {
   return result;
 }
 
-void text_to_file(const interceptor::log::Log& log, const fs::path& output) {
+void text_to_file(const interceptor::Log& log, const fs::path& output) {
   std::string content;
   google::protobuf::TextFormat::PrintToString(log, &content);
   std::ofstream os(output);
@@ -115,7 +115,7 @@ void text_to_file(const interceptor::log::Log& log, const fs::path& output) {
   }
 }
 
-void compdb_to_file(const interceptor::log::Log& log, const fs::path& output) {
+void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
   static const std::unordered_set<std::string_view> COMPILE_EXTENSIONS = {
       ".c", ".cc", ".cpp", ".cxx", ".S",
   };
@@ -126,7 +126,7 @@ void compdb_to_file(const interceptor::log::Log& log, const fs::path& output) {
       "g++",
   };
 
-  interceptor::log::CompilationDatabase compdb;
+  interceptor::CompilationDatabase compdb;
 
   for (const auto& command : log.commands()) {
     // skip anything that is not a compiler invocation

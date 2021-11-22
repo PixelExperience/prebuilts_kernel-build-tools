@@ -48,7 +48,7 @@ static void process_command(const char* filename, char* const argv[], char* cons
 static void log(const interceptor::Command&);
 
 // execute potentially modified command
-static void exec(const interceptor::Command&);
+static void exec(const interceptor::Command&, char* const envp[]);
 
 // OVERLOADS for LD_PRELOAD USE
 
@@ -68,36 +68,26 @@ int execve(const char* filename, char* const argv[], char* const envp[]) {
 
 namespace interceptor {
 
-Command::Command(const char* program, char* const argv[], char* const envp[])
-    : program_(program), cwd_(fs::current_path()), argv_(argv), envp_(envp) {}
+static Command instantiate_command(const char* program, char* const argv[], char* const envp[]) {
+  Command result;
+  result.set_program(program);
+  result.set_current_dir(fs::current_path());
 
-const ArgVec& Command::args() const {
-  if (!args_.has_value()) {
-    args_ = ArgVec();
-    for (auto current_arg = argv_; *current_arg; ++current_arg) {
-      args_->emplace_back(*current_arg);
-    }
+  for (auto current_arg = argv; *current_arg; ++current_arg) {
+    result.add_args(*current_arg);
   }
-  return *args_;
-}
 
-const EnvMap& Command::env() const {
-  if (!env_.has_value()) {
-    env_ = EnvMap();
-    for (auto current_env = envp_; *current_env; ++current_env) {
-      const std::string_view s(*current_env);
-      const auto pos = s.find('=');
-      if (pos == EnvMap::key_type::npos) {
-        continue;
-      }
-      env_->emplace(s.substr(0, pos), s.substr(pos + 1));
+  for (auto current_env = envp; *current_env; ++current_env) {
+    const std::string s(*current_env);
+    const auto pos = s.find('=');
+    if (pos == std::string::npos) {
+      continue;
     }
-  }
-  return *env_;
-}
 
-const std::string& Command::program() const {
-  return program_;
+    (*result.mutable_env_vars())[s.substr(0, pos)] = s.substr(pos + 1);
+  }
+
+  return result;
 }
 
 // TODO: chain output iterators instead and find a common expression
@@ -107,8 +97,8 @@ static std::string escape(std::string in) {
   return in;
 }
 
-template <typename T>
-static void dump_vector(std::ostream& os, const char* key, const std::vector<T>& vec) {
+template <typename V>
+static void dump_vector(std::ostream& os, const char* key, const V& vec) {
   os << std::quoted(key) << ": [";
   bool comma = false;
   for (const auto& e : vec) {
@@ -121,47 +111,31 @@ static void dump_vector(std::ostream& os, const char* key, const std::vector<T>&
   os << "]";
 }
 
-std::string Command::command() const {
+static std::string repr(const Command& command) {
   std::ostringstream cmd;
-  cmd << program();
-  if (args().size() > 1) cmd << ' ';
-  std::transform(args().cbegin() + 1, args().cend(), std::ostream_iterator<std::string>(cmd, " "),
-                 escape);
-  return cmd.str();
-}
+  cmd << command.program();
+  if (command.args().size() > 1) cmd << ' ';
+  std::transform(command.args().cbegin() + 1, command.args().cend(),
+                 std::ostream_iterator<std::string>(cmd, " "), escape);
 
-std::string Command::repr() const {
   std::ostringstream os;
-  os << R"({"cmd": )" << std::quoted(command());
+  os << R"({"cmd": )" << std::quoted(cmd.str());
 
   os << ", ";
-  dump_vector(os, "in", inputs());
+  dump_vector(os, "in", command.inputs());
   os << ", ";
-  dump_vector(os, "out", outputs());
+  dump_vector(os, "out", command.outputs());
 
-  os << R"(, "cwd": )" << std::quoted(cwd_);
+  os << R"(, "cwd": )" << std::quoted(command.current_dir());
 
   os << "}";
   return os.str();
 }
 
-log::Message Command::message() const {
-  log::Message result;
-  auto& command = *result.mutable_command();
-
-  command.set_program(program_);
-  *command.mutable_args() = {args().cbegin(), args().cend()};
-  command.set_current_dir(cwd_);
-  *command.mutable_outputs() = {outputs().cbegin(), outputs().cend()};
-  *command.mutable_inputs() = {inputs().cbegin(), inputs().cend()};
-
-  return result;
-}
-
-void Command::make_relative() {
+static void make_relative(Command* command) {
   // determine the ROOT_DIR
   std::string root_dir;
-  if (auto it = env().find(ENV_root_dir); it != env().cend()) {
+  if (auto it = command->env_vars().find(ENV_root_dir); it != command->env_vars().cend()) {
     root_dir = it->second;
     if (root_dir[root_dir.size() - 1] != '/') root_dir += '/';
   } else {
@@ -171,7 +145,7 @@ void Command::make_relative() {
   // determine the relative path to ROOT_DIR from the current working dir
   std::string rel_root = fs::relative(root_dir);
   if (rel_root[rel_root.size() - 1] != '/') rel_root += '/';
-  if (rel_root == "./") rel_root = "";
+  if (rel_root == "./") rel_root.clear();
 
   // TODO: This is generally bad as this means we can't make anything relative.
   // This happens if the out dir is outside of the root.
@@ -179,7 +153,7 @@ void Command::make_relative() {
     return;
   }
 
-  cwd_ = fs::relative(cwd_, root_dir);
+  command->set_current_dir(fs::relative(command->current_dir(), root_dir));
 
   // replacement functor
   const auto replace_all = [&](auto& str) {
@@ -189,17 +163,15 @@ void Command::make_relative() {
     }
   };
 
-  if (!args_.has_value()) args();
-
   // now go and replace everything
-  replace_all(program_);
-  std::for_each(args_->begin(), args_->end(), replace_all);
+  replace_all(*command->mutable_program());
+  std::for_each(command->mutable_args()->begin(), command->mutable_args()->end(), replace_all);
 }
 
 static AnalysisResult analyze_command(const interceptor::Command& command);
 
-void Command::analyze() {
-  auto [inputs, outputs] = analyze_command(*this);
+static void analyze(Command* command) {
+  auto [inputs, outputs] = analyze_command(*command);
 
   // TODO: this sanitizing should be done during make_relative
   for (auto& input : inputs) {
@@ -215,13 +187,13 @@ void Command::analyze() {
   for (const auto& input : inputs) {
     if (!fs::is_regular_file(input)) {
       std::cerr << "missing input: " << input << "\n";
-      std::cerr << Command::repr() << "\n";
+      std::cerr << repr(*command) << "\n";
       exit(1);
     }
   }
 
-  inputs_ = std::move(inputs);
-  outputs_ = std::move(outputs);
+  *command->mutable_inputs() = {inputs.cbegin(), inputs.cend()};
+  *command->mutable_outputs() = {outputs.cbegin(), outputs.cend()};
 }
 
 /// COMMAND ANALYSIS
@@ -300,7 +272,7 @@ static const std::initializer_list<std::pair<std::regex, Analyzer>> analyzers{
 static AnalysisResult analyze_command(const Command& command) {
   for (const auto& [regex, analyzer] : analyzers) {
     if (std::regex_match(command.args()[0], regex)) {
-      return analyzer(command.program(), command.args(), command.env());
+      return analyzer(command.program(), command.args(), command.env_vars());
     }
   }
   return {};
@@ -320,35 +292,38 @@ static void process_command(const char* filename, char* const argv[], char* cons
 
   // Ok, we can handle that one, let's transform it.
 
-  interceptor::Command command(filename, argv, envp);
+  auto command = interceptor::instantiate_command(filename, argv, envp);
 
   // rewrite all command line arguments (including the program itself) to use
   // paths relative to ROOT_DIR. This is essential for reproducible builds and
   // furthermore necessary to produce cache hits in RBE.
-  command.make_relative();
+  make_relative(&command);
 
-  command.analyze();
+  analyze(&command);
 
   log(command);
 
   // pass down the transformed command to execve
-  exec(command);
+  exec(command, envp);
 }
 
 static void log(const interceptor::Command& command) {
-  const auto& env = command.env();
+  const auto& env = command.env_vars();
 
   if (const auto env_it = env.find(ENV_command_log); env_it != env.cend()) {
     std::ofstream file;
     file.open(std::string(env_it->second),
               std::ofstream::out | std::ofstream::app | std::ofstream::binary);
+    interceptor::Message message;
+    *message.mutable_command() = command;
+    message.mutable_command()->clear_env_vars();
     if (file.is_open()) {
-      google::protobuf::util::SerializeDelimitedToOstream(command.message(), &file);
+      google::protobuf::util::SerializeDelimitedToOstream(message, &file);
     }
   }
 }
 
-static void exec(const interceptor::Command& command) {
+static void exec(const interceptor::Command& command, char* const envp[]) {
   std::vector<const char*> c_args;
   c_args.reserve(command.args().size() + 1);
   c_args[command.args().size()] = nullptr;
@@ -358,5 +333,7 @@ static void exec(const interceptor::Command& command) {
   // TODO: at this point, we could free some memory that is held in Command.
   //       While the args vector is reused for args, we could free the EnvMap
   //       and the original args.
-  old_execve(command.program().c_str(), const_cast<char**>(c_args.data()), command.envp());
+
+  // does not return
+  old_execve(command.program().c_str(), const_cast<char**>(c_args.data()), envp);
 }
