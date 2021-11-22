@@ -1,16 +1,40 @@
+cc_defaults {
+    name: "interceptor_defaults",
+    static_libs: [
+        "libc++fs",
+        "libinterceptor_log",
+        "libprotobuf-cpp-full",
+    ],
+}
+
 cc_library_host_shared {
     name: "libinterceptor",
     srcs: ["interceptor.cc"],
+    defaults: ["interceptor_defaults"],
     static_libs: [
-        "libc++fs",
         "libbase",
     ],
 }
 
+cc_library_host_static {
+    name: "libinterceptor_log",
+    srcs: ["log.proto"],
+    proto: {
+        type: "full",
+        static: true,
+        export_proto_headers: true,
+        canonical_path_from_root: false,
+    },
+}
+
 cc_binary_host {
     name: "interceptor",
-    srcs: ["main.cc",],
-    static_libs: [
-        "libc++fs",
-    ],
+    srcs: ["main.cc"],
+    defaults: ["interceptor_defaults"],
+}
+
+cc_binary_host {
+    name: "interceptor_analysis",
+    srcs: ["analysis.cc",],
+    defaults: ["interceptor_defaults",],
 }
