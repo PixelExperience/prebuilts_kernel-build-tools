@@ -36,6 +36,8 @@ using EnvMap = std::remove_pointer_t<decltype(Command().mutable_env_vars())>;
 using Inputs = std::vector<std::string>;
 using Outputs = Inputs;
 
+std::ostream& operator<<(std::ostream& os, const interceptor::Command& command);
+
 // Command analysis
 
 struct AnalysisResult {

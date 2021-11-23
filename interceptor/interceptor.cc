@@ -90,48 +90,6 @@ static Command instantiate_command(const char* program, char* const argv[], char
   return result;
 }
 
-// TODO: chain output iterators instead and find a common expression
-static std::string escape(std::string in) {
-  in = android::base::StringReplace(in, "\t", "\\t", true);
-  in = android::base::StringReplace(in, "\n", "\\n", true);
-  return in;
-}
-
-template <typename V>
-static void dump_vector(std::ostream& os, const char* key, const V& vec) {
-  os << std::quoted(key) << ": [";
-  bool comma = false;
-  for (const auto& e : vec) {
-    if (comma) {
-      os << ", ";
-    }
-    os << std::quoted(e);
-    comma = true;
-  }
-  os << "]";
-}
-
-static std::string repr(const Command& command) {
-  std::ostringstream cmd;
-  cmd << command.program();
-  if (command.args().size() > 1) cmd << ' ';
-  std::transform(command.args().cbegin() + 1, command.args().cend(),
-                 std::ostream_iterator<std::string>(cmd, " "), escape);
-
-  std::ostringstream os;
-  os << R"({"cmd": )" << std::quoted(cmd.str());
-
-  os << ", ";
-  dump_vector(os, "in", command.inputs());
-  os << ", ";
-  dump_vector(os, "out", command.outputs());
-
-  os << R"(, "cwd": )" << std::quoted(command.current_dir());
-
-  os << "}";
-  return os.str();
-}
-
 static void make_relative(Command* command) {
   // determine the ROOT_DIR
   std::string root_dir;
@@ -168,6 +126,43 @@ static void make_relative(Command* command) {
   std::for_each(command->mutable_args()->begin(), command->mutable_args()->end(), replace_all);
 }
 
+template <typename V>
+static void dump_vector(std::ostream& os, const V& vec) {
+  bool comma = false;
+  for (const auto& e : vec) {
+    if (comma) {
+      os << ", ";
+    }
+    os << std::quoted(e);
+    comma = true;
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, const interceptor::Command& command) {
+
+  os << "[(";
+  dump_vector(os, command.inputs());
+  os << ") => (";
+  dump_vector(os, command.outputs());
+  os << ")] ";
+
+  // TODO: chain output iterators instead and find a common expression
+  const static auto escape = [](auto in) {
+    in = android::base::StringReplace(in, "\t", "\\t", true);
+    in = android::base::StringReplace(in, "\n", "\\n", true);
+    return in;
+  };
+
+  std::ostringstream cmd;
+  cmd << command.program();
+  for (auto I = std::next(command.args().cbegin()), E = command.args().cend(); I != E; ++I)
+    cmd << ' ' << escape(*I);
+
+  os << cmd.str();
+  return os;
+
+}
+
 static AnalysisResult analyze_command(const interceptor::Command& command);
 
 static void analyze(Command* command) {
@@ -186,8 +181,7 @@ static void analyze(Command* command) {
   }
   for (const auto& input : inputs) {
     if (!fs::is_regular_file(input)) {
-      std::cerr << "missing input: " << input << "\n";
-      std::cerr << repr(*command) << "\n";
+      std::cerr << "missing input: " << input << "\n" << *command << "\n";
       exit(1);
     }
   }
