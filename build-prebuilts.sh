@@ -36,6 +36,8 @@ EOF
         e2fsck
         e2fsdroid
         img2simg
+        interceptor
+        interceptor_analysis
         lpmake
         lz4
         mkbootfs
@@ -55,6 +57,7 @@ EOF
     SOONG_LIBRARIES=(
         libcrypto-host.so
         libelf.so
+        libinterceptor.so
     )
 
     binaries="${SOONG_BINARIES[@]/#/${SOONG_HOST_OUT}/bin/}"
