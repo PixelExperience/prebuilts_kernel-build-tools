@@ -57,18 +57,22 @@ static Options parse_args(int argc, char* argv[]) {
   while (true) {
     int ix;
     int c = getopt_long(argc, argv, "-l:t:o:", opts, &ix);
-    if (c == -1) break;
+    if (c == -1) {
+      break;
+    }
     switch (c) {
       case 'l':
         result.command_log = fs::absolute(optarg);
         break;
       case 't':
-        if (strcmp(optarg, "text") == 0)
+        if (strcmp(optarg, "text") == 0) {
           result.output_format = OutputFormat::TEXT;
-        if (strcmp(optarg, "compdb") == 0)
+        }
+        if (strcmp(optarg, "compdb") == 0) {
           result.output_format = OutputFormat::COMPDB;
-        else
+        } else {
           usage();
+        }
         break;
       case 'o':
         result.output = fs::absolute(optarg);
@@ -130,7 +134,9 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
 
   for (const auto& command : log.commands()) {
     // skip anything that is not a compiler invocation
-    if (!COMPILERS.count(fs::path(command.args(0)).filename().native())) continue;
+    if (!COMPILERS.count(fs::path(command.args(0)).filename().native())) {
+      continue;
+    }
 
     // determine if we have a uniquely identifyable output
     const std::string single_output = [&]() {
@@ -145,21 +151,26 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
     }();
 
     // skip preprocessor invocations
-    if (std::find(command.args().cbegin(), command.args().cend(), "-E") != command.args().cend())
+    if (std::find(command.args().cbegin(), command.args().cend(), "-E") != command.args().cend()) {
       continue;
+    }
 
     // now iterate over all inputs, emitting an entry for each source file
     for (const auto& input : command.inputs()) {
       // skip anything that does not look like a source file (object files,
       // force included headers, etc.)
-      if (!COMPILE_EXTENSIONS.count(fs::path(input).extension().native())) continue;
+      if (!COMPILE_EXTENSIONS.count(fs::path(input).extension().native())) {
+        continue;
+      }
 
       // ok, now we have a new command
       auto& compile_command = *compdb.add_commands();
 
       compile_command.set_directory(fs::path(log.root_dir()) / command.current_dir());
       compile_command.set_file(input);
-      if (!single_output.empty()) compile_command.set_output(single_output);
+      if (!single_output.empty()) {
+        compile_command.set_output(single_output);
+      }
       *compile_command.mutable_arguments() = {command.args().cbegin(), command.args().cend()};
     }
   }

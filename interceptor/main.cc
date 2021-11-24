@@ -47,7 +47,9 @@ static Options parse_args(int argc, char* argv[]) {
     auto c = getopt_long(argc, argv, "l:", long_options, &option_index);
 
     /* Detect the end of the options. */
-    if (c == -1) break;
+    if (c == -1) {
+      break;
+    }
 
     switch (c) {
       case 'l':
@@ -78,8 +80,9 @@ static Options parse_args(int argc, char* argv[]) {
 static void setup_interceptor_library_path() {
   auto interceptor_library = fs::read_symlink("/proc/self/exe").parent_path().parent_path() /
                              "lib64" / "libinterceptor.so";
-  while (fs::is_symlink(interceptor_library))
+  while (fs::is_symlink(interceptor_library)) {
     interceptor_library = fs::read_symlink(interceptor_library);
+  }
   if (!fs::is_regular_file(interceptor_library)) {
     std::cerr << "Interceptor library could not be found!\n";
     exit(EX_CONFIG);
@@ -90,10 +93,11 @@ static void setup_interceptor_library_path() {
 static fs::path setup_root_dir() {
   const auto root_dir = getenv("ROOT_DIR");
   fs::path result;
-  if (root_dir != nullptr)
+  if (root_dir != nullptr) {
     result = root_dir;
-  else
+  } else {
     result = fs::current_path();
+  }
 
   setenv(ENV_root_dir, result.c_str(), 1);
 
@@ -130,9 +134,12 @@ class CommandLog {
         interceptor::Message message;
         while (true) {
           if (!google::protobuf::util::ParseDelimitedFromZeroCopyStream(&message, &input_stream,
-                                                                        nullptr))
+                                                                        nullptr)) {
             break;
-          if (message.has_command()) log.add_commands()->Swap(message.release_command());
+          }
+          if (message.has_command()) {
+            log.add_commands()->Swap(message.release_command());
+          }
         }
       }
       std::ofstream command_log(command_log_file_->c_str(), std::ios_base::binary);

@@ -95,15 +95,21 @@ static void make_relative(Command* command) {
   std::string root_dir;
   if (auto it = command->env_vars().find(ENV_root_dir); it != command->env_vars().cend()) {
     root_dir = it->second;
-    if (root_dir[root_dir.size() - 1] != '/') root_dir += '/';
+    if (root_dir[root_dir.size() - 1] != '/') {
+      root_dir += '/';
+    }
   } else {
     return;
   }
 
   // determine the relative path to ROOT_DIR from the current working dir
   std::string rel_root = fs::relative(root_dir);
-  if (rel_root[rel_root.size() - 1] != '/') rel_root += '/';
-  if (rel_root == "./") rel_root.clear();
+  if (rel_root[rel_root.size() - 1] != '/') {
+    rel_root += '/';
+  }
+  if (rel_root == "./") {
+    rel_root.clear();
+  }
 
   // TODO: This is generally bad as this means we can't make anything relative.
   // This happens if the out dir is outside of the root.
@@ -155,8 +161,9 @@ std::ostream& operator<<(std::ostream& os, const interceptor::Command& command) 
 
   std::ostringstream cmd;
   cmd << command.program();
-  for (auto I = std::next(command.args().cbegin()), E = command.args().cend(); I != E; ++I)
+  for (auto I = std::next(command.args().cbegin()), E = command.args().cend(); I != E; ++I) {
     cmd << ' ' << escape(*I);
+  }
 
   os << cmd.str();
   return os;
@@ -242,7 +249,9 @@ static AnalysisResult analyze_compiler_linker(const std::string&, const ArgVec& 
 static AnalysisResult analyze_archiver(const std::string&, const ArgVec& args, const EnvMap&) {
   AnalysisResult result;
 
-  if (args.size() < 3) return result;
+  if (args.size() < 3) {
+    return result;
+  }
   // skip args[0] as this is the program itself
   // skip args[1] are the archiver flags
   // args[2] is the output
