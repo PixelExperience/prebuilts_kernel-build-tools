@@ -93,7 +93,7 @@ static Command instantiate_command(const char* program, char* const argv[], char
 static void make_relative(Command* command) {
   // determine the ROOT_DIR
   std::string root_dir;
-  if (auto it = command->env_vars().find(ENV_root_dir); it != command->env_vars().cend()) {
+  if (auto it = command->env_vars().find(kEnvRootDirectory); it != command->env_vars().cend()) {
     root_dir = it->second;
     if (root_dir[root_dir.size() - 1] != '/') {
       root_dir += '/';
@@ -313,7 +313,7 @@ static void process_command(const char* filename, char* const argv[], char* cons
 static void log(const interceptor::Command& command) {
   const auto& env = command.env_vars();
 
-  if (const auto env_it = env.find(ENV_command_log); env_it != env.cend()) {
+  if (const auto env_it = env.find(kEnvCommandLog); env_it != env.cend()) {
     std::ofstream file;
     file.open(std::string(env_it->second),
               std::ofstream::out | std::ofstream::app | std::ofstream::binary);

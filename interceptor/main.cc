@@ -99,7 +99,7 @@ static fs::path setup_root_dir() {
     result = fs::current_path();
   }
 
-  setenv(ENV_root_dir, result.c_str(), 1);
+  setenv(kEnvRootDirectory, result.c_str(), 1);
 
   return result;
 }
@@ -112,7 +112,7 @@ class CommandLog {
   CommandLog(decltype(command_log_file_) command_log_file, const fs::path& root_dir)
       : command_log_file_(std::move(command_log_file)), root_dir_(root_dir) {
     if (command_log_file_) {
-      setenv(ENV_command_log, command_log_file_->c_str(), 1);
+      setenv(kEnvCommandLog, command_log_file_->c_str(), 1);
       std::ofstream command_log(command_log_file_->c_str(), std::ios_base::trunc);
       if (!command_log) {
         std::cerr << "Could not open command log for writing: " << *command_log_file_ << "\n";

@@ -120,10 +120,10 @@ void text_to_file(const interceptor::Log& log, const fs::path& output) {
 }
 
 void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
-  static const std::unordered_set<std::string_view> COMPILE_EXTENSIONS = {
+  static const std::unordered_set<std::string_view> kCompileExtensions = {
       ".c", ".cc", ".cpp", ".cxx", ".S",
   };
-  static const std::unordered_set<std::string_view> COMPILERS = {
+  static const std::unordered_set<std::string_view> kCompilers = {
       "clang",
       "clang++",
       "gcc",
@@ -134,7 +134,7 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
 
   for (const auto& command : log.commands()) {
     // skip anything that is not a compiler invocation
-    if (!COMPILERS.count(fs::path(command.args(0)).filename().native())) {
+    if (!kCompilers.count(fs::path(command.args(0)).filename().native())) {
       continue;
     }
 
@@ -159,7 +159,7 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
     for (const auto& input : command.inputs()) {
       // skip anything that does not look like a source file (object files,
       // force included headers, etc.)
-      if (!COMPILE_EXTENSIONS.count(fs::path(input).extension().native())) {
+      if (!kCompileExtensions.count(fs::path(input).extension().native())) {
         continue;
       }
 
