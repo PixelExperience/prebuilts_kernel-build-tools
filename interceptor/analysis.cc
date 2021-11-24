@@ -133,6 +133,10 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
   interceptor::CompilationDatabase compdb;
 
   for (const auto& command : log.commands()) {
+    if (command.arguments().empty()) {
+      continue;
+    }
+
     // skip anything that is not a compiler invocation
     if (!kCompilers.count(fs::path(command.arguments(0)).filename().native())) {
       continue;
