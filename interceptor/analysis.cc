@@ -38,7 +38,7 @@ struct Options {
   fs::path output;
 };
 
-static Options parse_args(int argc, char* argv[]) {
+static Options parse_arguments(int argc, char* argv[]) {
   Options result;
 
   const static option opts[] = {
@@ -134,7 +134,7 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
 
   for (const auto& command : log.commands()) {
     // skip anything that is not a compiler invocation
-    if (!kCompilers.count(fs::path(command.args(0)).filename().native())) {
+    if (!kCompilers.count(fs::path(command.arguments(0)).filename().native())) {
       continue;
     }
 
@@ -151,7 +151,8 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
     }();
 
     // skip preprocessor invocations
-    if (std::find(command.args().cbegin(), command.args().cend(), "-E") != command.args().cend()) {
+    if (std::find(command.arguments().cbegin(), command.arguments().cend(), "-E") !=
+        command.arguments().cend()) {
       continue;
     }
 
@@ -166,12 +167,13 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
       // ok, now we have a new command
       auto& compile_command = *compdb.add_commands();
 
-      compile_command.set_directory(fs::path(log.root_dir()) / command.current_dir());
+      compile_command.set_directory(fs::path(log.root_directory()) / command.current_directory());
       compile_command.set_file(input);
       if (!single_output.empty()) {
         compile_command.set_output(single_output);
       }
-      *compile_command.mutable_arguments() = {command.args().cbegin(), command.args().cend()};
+      *compile_command.mutable_arguments() = {command.arguments().cbegin(),
+                                              command.arguments().cend()};
     }
   }
 
@@ -201,7 +203,7 @@ void compdb_to_file(const interceptor::Log& log, const fs::path& output) {
 }
 
 int main(int argc, char* argv[]) {
-  const auto options = parse_args(argc, argv);
+  const auto options = parse_arguments(argc, argv);
   const auto log = read_log(options.command_log);
 
   switch (options.output_format) {

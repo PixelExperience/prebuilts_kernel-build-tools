@@ -30,8 +30,8 @@ constexpr static auto kEnvRootDirectory = "INTERCEPTOR_root_directory";
 namespace interceptor {
 
 // Some type definitions to gain some type safety
-using ArgVec = std::remove_pointer_t<decltype(Command().mutable_args())>;
-using EnvMap = std::remove_pointer_t<decltype(Command().mutable_env_vars())>;
+using ArgVec = std::remove_pointer_t<decltype(Command().mutable_arguments())>;
+using EnvMap = std::remove_pointer_t<decltype(Command().mutable_environment_variables())>;
 
 using Inputs = std::vector<std::string>;
 using Outputs = Inputs;

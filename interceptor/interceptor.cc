@@ -48,7 +48,7 @@ static void process_command(const char* filename, char* const argv[], char* cons
 static void log(const interceptor::Command&);
 
 // execute potentially modified command
-static void exec(const interceptor::Command&, char* const envp[]);
+static void execute(const interceptor::Command&, char* const envp[]);
 
 // OVERLOADS for LD_PRELOAD USE
 
@@ -71,20 +71,20 @@ namespace interceptor {
 static Command instantiate_command(const char* program, char* const argv[], char* const envp[]) {
   Command result;
   result.set_program(program);
-  result.set_current_dir(fs::current_path());
+  result.set_current_directory(fs::current_path());
 
-  for (auto current_arg = argv; *current_arg; ++current_arg) {
-    result.add_args(*current_arg);
+  for (auto current_argument = argv; *current_argument; ++current_argument) {
+    result.add_arguments(*current_argument);
   }
 
-  for (auto current_env = envp; *current_env; ++current_env) {
-    const std::string s(*current_env);
+  for (auto current_env_var = envp; *current_env_var; ++current_env_var) {
+    const std::string s(*current_env_var);
     const auto pos = s.find('=');
     if (pos == std::string::npos) {
       continue;
     }
 
-    (*result.mutable_env_vars())[s.substr(0, pos)] = s.substr(pos + 1);
+    (*result.mutable_environment_variables())[s.substr(0, pos)] = s.substr(pos + 1);
   }
 
   return result;
@@ -92,44 +92,45 @@ static Command instantiate_command(const char* program, char* const argv[], char
 
 static void make_relative(Command* command) {
   // determine the ROOT_DIR
-  std::string root_dir;
-  if (auto it = command->env_vars().find(kEnvRootDirectory); it != command->env_vars().cend()) {
-    root_dir = it->second;
-    if (root_dir[root_dir.size() - 1] != '/') {
-      root_dir += '/';
+  std::string root_directory;
+  if (auto it = command->environment_variables().find(kEnvRootDirectory);
+      it != command->environment_variables().cend()) {
+    root_directory = it->second;
+    if (root_directory[root_directory.size() - 1] != '/') {
+      root_directory += '/';
     }
   } else {
     return;
   }
 
   // determine the relative path to ROOT_DIR from the current working dir
-  std::string rel_root = fs::relative(root_dir);
-  if (rel_root[rel_root.size() - 1] != '/') {
-    rel_root += '/';
+  std::string relative_root = fs::relative(root_directory);
+  if (relative_root[relative_root.size() - 1] != '/') {
+    relative_root += '/';
   }
-  if (rel_root == "./") {
-    rel_root.clear();
+  if (relative_root == "./") {
+    relative_root.clear();
   }
 
   // TODO: This is generally bad as this means we can't make anything relative.
   // This happens if the out dir is outside of the root.
-  if (rel_root.find(root_dir) != std::string::npos) {
+  if (relative_root.find(root_directory) != std::string::npos) {
     return;
   }
 
-  command->set_current_dir(fs::relative(command->current_dir(), root_dir));
+  command->set_current_directory(fs::relative(command->current_directory(), root_directory));
 
   // replacement functor
   const auto replace_all = [&](auto& str) {
     auto pos = std::string::npos;
-    while ((pos = str.find(root_dir)) != std::string::npos) {
-      str.replace(pos, root_dir.length(), rel_root);
+    while ((pos = str.find(root_directory)) != std::string::npos) {
+      str.replace(pos, root_directory.length(), relative_root);
     }
   };
 
   // now go and replace everything
   replace_all(*command->mutable_program());
-  std::for_each(command->mutable_args()->begin(), command->mutable_args()->end(), replace_all);
+  std::for_each(command->mutable_arguments()->begin(), command->mutable_arguments()->end(), replace_all);
 }
 
 template <typename V>
@@ -161,7 +162,7 @@ std::ostream& operator<<(std::ostream& os, const interceptor::Command& command) 
 
   std::ostringstream cmd;
   cmd << command.program();
-  for (auto I = std::next(command.args().cbegin()), E = command.args().cend(); I != E; ++I) {
+  for (auto I = std::next(command.arguments().cbegin()), E = command.arguments().cend(); I != E; ++I) {
     cmd << ' ' << escape(*I);
   }
 
@@ -201,9 +202,9 @@ static void analyze(Command* command) {
 
 using Analyzer = std::function<AnalysisResult(const std::string&, const ArgVec&, const EnvMap&)>;
 
-static AnalysisResult analyze_compiler_linker(const std::string&, const ArgVec& args,
+static AnalysisResult analyze_compiler_linker(const std::string&, const ArgVec& arguments,
                                               const EnvMap&) {
-  static constexpr std::array kSkipNextArgs{
+  static constexpr std::array kSkipNextArguments{
       "-isystem", "-I", "-L", "-m", "-soname", "-z",
   };
   static constexpr std::string_view kOutputOption = "-Wp,-MMD,";
@@ -211,53 +212,54 @@ static AnalysisResult analyze_compiler_linker(const std::string&, const ArgVec& 
   AnalysisResult result;
   bool next_is_out = false;
   bool skip_next = false;
-  // skip args[0] as this is the program itself
-  for (auto it = args.cbegin() + 1; it != args.cend(); ++it) {
-    const auto& arg = *it;
-    if (arg == "-o") {
+  // skip arguments[0] as this is the program itself
+  for (auto it = arguments.cbegin() + 1; it != arguments.cend(); ++it) {
+    const auto& argument = *it;
+    if (argument == "-o") {
       next_is_out = true;
       continue;
     }
     if (next_is_out) {
-      result.outputs.push_back(arg);
+      result.outputs.push_back(argument);
       next_is_out = false;
       continue;
     }
-    if (arg.rfind(kOutputOption, 0) == 0) {
-      result.outputs.push_back(arg.substr(kOutputOption.size()));
+    if (argument.rfind(kOutputOption, 0) == 0) {
+      result.outputs.push_back(argument.substr(kOutputOption.size()));
     }
     if (skip_next) {
       skip_next = false;
       continue;
     }
-    if (std::find(kSkipNextArgs.cbegin(), kSkipNextArgs.cend(), arg) != kSkipNextArgs.cend()) {
+    if (std::find(kSkipNextArguments.cbegin(), kSkipNextArguments.cend(), argument) !=
+        kSkipNextArguments.cend()) {
       skip_next = true;
     }
     // ignore test compilations
-    if (arg == "/dev/null" || arg == "-") {
+    if (argument == "/dev/null" || argument == "-") {
       return {};
     }
-    if (arg[0] == '-') {  // ignore flags
+    if (argument[0] == '-') {  // ignore flags
       continue;
     }
-    result.inputs.push_back(arg);
+    result.inputs.push_back(argument);
   }
 
   return result;
 }
 
-static AnalysisResult analyze_archiver(const std::string&, const ArgVec& args, const EnvMap&) {
+static AnalysisResult analyze_archiver(const std::string&, const ArgVec& arguments, const EnvMap&) {
   AnalysisResult result;
 
-  if (args.size() < 3) {
+  if (arguments.size() < 3) {
     return result;
   }
-  // skip args[0] as this is the program itself
-  // skip args[1] are the archiver flags
-  // args[2] is the output
-  result.outputs.push_back(args[2]);
-  // args[3:] are the inputs
-  result.inputs.insert(result.inputs.cend(), args.cbegin() + 3, args.cend());
+  // skip arguments[0] as this is the program itself
+  // skip arguments[1] are the archiver flags
+  // arguments[2] is the output
+  result.outputs.push_back(arguments[2]);
+  // arguments[3:] are the inputs
+  result.inputs.insert(result.inputs.cend(), arguments.cbegin() + 3, arguments.cend());
   return result;
 }
 
@@ -274,8 +276,8 @@ static const std::initializer_list<std::pair<std::regex, Analyzer>> analyzers{
 
 static AnalysisResult analyze_command(const Command& command) {
   for (const auto& [regex, analyzer] : analyzers) {
-    if (std::regex_match(command.args()[0], regex)) {
-      return analyzer(command.program(), command.args(), command.env_vars());
+    if (std::regex_match(command.arguments()[0], regex)) {
+      return analyzer(command.program(), command.arguments(), command.environment_variables());
     }
   }
   return {};
@@ -307,11 +309,11 @@ static void process_command(const char* filename, char* const argv[], char* cons
   log(command);
 
   // pass down the transformed command to execve
-  exec(command, envp);
+  execute(command, envp);
 }
 
 static void log(const interceptor::Command& command) {
-  const auto& env = command.env_vars();
+  const auto& env = command.environment_variables();
 
   if (const auto env_it = env.find(kEnvCommandLog); env_it != env.cend()) {
     std::ofstream file;
@@ -319,24 +321,24 @@ static void log(const interceptor::Command& command) {
               std::ofstream::out | std::ofstream::app | std::ofstream::binary);
     interceptor::Message message;
     *message.mutable_command() = command;
-    message.mutable_command()->clear_env_vars();
+    message.mutable_command()->clear_environment_variables();
     if (file.is_open()) {
       google::protobuf::util::SerializeDelimitedToOstream(message, &file);
     }
   }
 }
 
-static void exec(const interceptor::Command& command, char* const envp[]) {
-  std::vector<const char*> c_args;
-  c_args.reserve(command.args().size() + 1);
-  c_args[command.args().size()] = nullptr;
-  for (const auto& arg : command.args()) {
-    c_args.push_back(arg.data());
+static void execute(const interceptor::Command& command, char* const envp[]) {
+  std::vector<const char*> c_arguments;
+  c_arguments.reserve(command.arguments().size() + 1);
+  c_arguments[command.arguments().size()] = nullptr;
+  for (const auto& arg : command.arguments()) {
+    c_arguments.push_back(arg.data());
   }
   // TODO: at this point, we could free some memory that is held in Command.
-  //       While the args vector is reused for args, we could free the EnvMap
-  //       and the original args.
+  //       While the arguments vector is reused for arguments, we could free
+  //       the EnvMap and the original arguments.
 
   // does not return
-  old_execve(command.program().c_str(), const_cast<char**>(c_args.data()), envp);
+  old_execve(command.program().c_str(), const_cast<char**>(c_arguments.data()), envp);
 }
