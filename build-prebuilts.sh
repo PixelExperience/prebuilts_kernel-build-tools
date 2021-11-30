@@ -42,6 +42,7 @@ EOF
         lz4
         mkbootfs
         mkdtboimg.py
+        mkdtimg
         mke2fs
         mkfs.erofs
         mkuserimg_mke2fs
