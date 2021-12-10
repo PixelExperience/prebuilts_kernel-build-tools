@@ -7,15 +7,15 @@
 
   <superproject name="kernel/superproject" remote="aosp" />
 
-  <project path="prebuilts/kernel-build-tools" name="kernel/prebuilts/build-tools" clone-depth="1" revision="cb506cb8adbe5abfda6539067e858c4828923884" />
+  <project path="prebuilts/kernel-build-tools" name="kernel/prebuilts/build-tools" clone-depth="1" revision="0e0a6616aa159b42ba87d21033b78f69f6e41017" />
 
   <project path="build/blueprint" name="platform/build/blueprint" revision="8e7786a0fd0e2fa1dfd9d11556ce06ae2bf9abfc" />
 
-  <project path="build/make" name="platform/build" groups="pdk" revision="1295bc51383913eddfa76fb2f9c6e22cac102a4b">
+  <project path="build/make" name="platform/build" groups="pdk" revision="598cbbcde724845c16363c9f2e55e6f6f35da894">
     <linkfile dest="build/tools" src="tools" />
 </project>
 
-  <project path="build/soong" name="platform/build/soong" revision="a85f7bde32a288368de0dba54f90b939214849e7">
+  <project path="build/soong" name="platform/build/soong" revision="4d5cd1f267d2c301a37378b6761a91c5199f0872">
     <linkfile dest="Android.bp" src="root.bp" />
 
     <linkfile dest="bootstrap.bash" src="bootstrap.bash" />
@@ -23,7 +23,7 @@
 
   <project path="external/golang-protobuf" name="platform/external/golang-protobuf" revision="1a171bb04bb274abbf642666f7e73cff2feaee70" />
 
-  <project path="prebuilts/clang/host/linux-x86" name="platform/prebuilts/clang/host/linux-x86" groups="linux" clone-depth="1" revision="5c7d6c4c70a3beca33aa8cd51c0a1fd02cf43ae2" />
+  <project path="prebuilts/clang/host/linux-x86" name="platform/prebuilts/clang/host/linux-x86" groups="linux" clone-depth="1" revision="9b5902fb27759c0dfe4af4dedb70078af70de17d" />
 
   <project path="prebuilts/build-tools" name="platform/prebuilts/build-tools" clone-depth="1" revision="65e1cd70ea80535552cfb66b727cff989be244f6" />
 
@@ -43,7 +43,7 @@
 
   <project path="external/elfutils" name="platform/external/elfutils" revision="be508084da684d34e4a03a9e2107e0537ab464d2" />
 
-  <project path="external/erofs-utils" name="platform/external/erofs-utils" revision="fd1882ac16470ca31c48ef5bd3be9a5ce2625c9b" />
+  <project path="external/erofs-utils" name="platform/external/erofs-utils" revision="052815d64946c966b9871dc00fd26d2bdd7c7ca6" />
 
   <project path="external/expat" name="platform/external/expat" revision="d7b6dc31ac4262d6b1731b0cec7b52cb5223f73a" />
 
@@ -51,7 +51,7 @@
 
   <project path="external/go-cmp" name="platform/external/go-cmp" groups="pdk" revision="fa2070565df10e3b0e9b85c7ea12d40ffa3c7f3e" />
 
-  <project path="external/icu" name="platform/external/icu" revision="29b0b4f15374afe20b3b00c5db6d8a59b8506d35" />
+  <project path="external/icu" name="platform/external/icu" revision="42d09d02b71d1fb5d181595931c6a9d5d41a5fc4" />
 
   <project path="external/libbpf" name="platform/external/libbpf" revision="c72a94951d15a2f87c287f67db79f345dcbb7271" />
 
@@ -87,15 +87,15 @@
 
   <project path="prebuilts/clang-tools" name="platform/prebuilts/clang-tools" clone-depth="1" revision="cd5220e72240cd4fa6172ec3418f41f9bb1d0249" />
 
-  <project path="system/core" name="platform/system/core" revision="fc5692852ea2d5fdafb22cd0919552b03ef4c578" />
+  <project path="system/core" name="platform/system/core" revision="e797a5c75afc17024d0f0f488c130128fcd704e2" />
 
   <project path="system/logging" name="platform/system/logging" revision="2b2e39cae1977b9bad3b184814393a666d66f881" />
 
-  <project path="system/extras" name="platform/system/extras" revision="356882916927b437f4ec3d4987245d7f46d81d4a" />
+  <project path="system/extras" name="platform/system/extras" revision="f7b67fdfebd33fd6ddf09261d3dfab6aaadeeff7" />
 
   <project path="system/libbase" name="platform/system/libbase" revision="a0eec0eea8f9163f2eacee8ca702fe737f6c5a0e" />
 
-  <project path="system/security" name="platform/system/security" revision="12d60c328a5356360ba49b326bef3dd1c4befd8e" />
+  <project path="system/security" name="platform/system/security" revision="411a1800f3a938e8349fc13267c963d2613ca931" />
 
   <project path="system/tools/aidl" name="platform/system/tools/aidl" revision="30c8e5270fc3edb18754c9c628fecc08c511e8f7" />
 
@@ -109,5 +109,5 @@
 
   <project path="tools/libufdt" name="platform/system/libufdt" revision="b53ee1d949938b197aad9706c138d8ee85384e35" />
 
-  <project path="tools/interceptor" name="kernel/tools/interceptor" revision="526323b0494be90d2dbaba296284f0646a800fb5" />
+  <project path="tools/interceptor" name="kernel/tools/interceptor" revision="65cc9ba16295f4f2c7f59015c1e7433c586d35f6" />
 </manifest>
