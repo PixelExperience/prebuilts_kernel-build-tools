@@ -35,6 +35,7 @@ EOF
         dtc
         e2fsck
         e2fsdroid
+        fec
         img2simg
         interceptor
         interceptor_analysis
