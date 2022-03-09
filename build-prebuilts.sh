@@ -36,6 +36,7 @@ EOF
         e2fsck
         e2fsdroid
         fec
+        fsck.erofs
         img2simg
         interceptor
         interceptor_analysis
