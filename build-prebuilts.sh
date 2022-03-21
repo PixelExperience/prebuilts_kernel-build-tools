@@ -31,6 +31,7 @@ EOF
         btfinfo
         build_image
         build_super_image
+        certify_bootimg
         depmod
         dtc
         e2fsck
@@ -55,6 +56,7 @@ EOF
         swig
         tune2fs
         ufdt_apply_overlay
+        unpack_bootimg
     )
 
     SOONG_LIBRARIES=(
