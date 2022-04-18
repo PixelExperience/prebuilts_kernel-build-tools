@@ -56,7 +56,6 @@ EOF
         swig
         tune2fs
         ufdt_apply_overlay
-        unpack_bootimg
     )
 
     SOONG_LIBRARIES=(
