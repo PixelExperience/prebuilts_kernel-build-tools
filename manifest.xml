@@ -7,15 +7,15 @@
 
   <superproject name="kernel/superproject" remote="aosp" revision="build-tools" />
 
-  <project path="prebuilts/kernel-build-tools" name="kernel/prebuilts/build-tools" clone-depth="1" revision="87c786adc3e4687344a6af2dafb345fe5de0869a" />
+  <project path="prebuilts/kernel-build-tools" name="kernel/prebuilts/build-tools" clone-depth="1" revision="1f9a169ac19d0a20c8266bc078eb5c48b572b134" />
 
-  <project path="build/blueprint" name="platform/build/blueprint" revision="57d5937e6fd4438aea9c0d6d06a85d2c69cbb61b" />
+  <project path="build/blueprint" name="platform/build/blueprint" revision="2a95e590b6727ead76d0474bc70bb14971595896" />
 
-  <project path="build/make" name="platform/build" groups="pdk" revision="d0035d5d8817fcbfd3ef92e3dc35c92805257890">
+  <project path="build/make" name="platform/build" groups="pdk" revision="4449692fa960bb10378ac8f779a0bfe710237851">
     <linkfile dest="build/tools" src="tools" />
 </project>
 
-  <project path="build/soong" name="platform/build/soong" revision="1db9d96d6ada504e5a95bbca09f3f2d35ad2e11c">
+  <project path="build/soong" name="platform/build/soong" revision="ced67ded0b9b962c575989c1835ebe9d9b776d50">
     <linkfile dest="Android.bp" src="root.bp" />
 
     <linkfile dest="bootstrap.bash" src="bootstrap.bash" />
@@ -35,7 +35,7 @@
 
   <project path="bionic" name="platform/bionic" revision="4ebdeebef74ffa09fe8176f73b32d5a21f4be4ae" />
 
-  <project path="external/boringssl" name="platform/external/boringssl" revision="a8f71fcea2b133b323af7c88bc074ccfd09f4fd1" />
+  <project path="external/boringssl" name="platform/external/boringssl" revision="e6e9a5d015a010d2fab0a13392eca548f7c370cc" />
 
   <project path="external/dwarves" name="platform/external/dwarves" revision="3c8f7e8b2cf7ff902b71c42d00fda30f30114b07" />
 
@@ -57,7 +57,7 @@
 
   <project path="external/libbpf" name="platform/external/libbpf" revision="ae6cd3345b78a75652e83afb072e99e70e5887d8" />
 
-  <project path="external/libabigail" name="platform/external/libabigail" revision="ebd2d3dda1d729bd411fade7edf58229fd02719b" />
+  <project path="external/libabigail" name="platform/external/libabigail" revision="8456ad92a96e0e0484766a44dada4e08c5144d81" />
 
   <project path="external/libcxx" name="platform/external/libcxx" revision="0b1ac82ded2bcb4e16abda1b2491fb34c39b554c" />
 
@@ -91,13 +91,13 @@
 
   <project path="prebuilts/clang-tools" name="platform/prebuilts/clang-tools" clone-depth="1" revision="91f4dc745f5ac520ba307d41dcccfcf1da87c8e1" />
 
-  <project path="system/core" name="platform/system/core" revision="ab2d6cdc8fcab494f06effc7a9eb1855313bcf3b" />
+  <project path="system/core" name="platform/system/core" revision="762543a34fd8d5dccdaa842e92dc8c0f012b3d39" />
 
   <project path="system/logging" name="platform/system/logging" revision="24f69a13c3bb27aceac1b9a0ef13c4cd41f618cf" />
 
-  <project path="system/extras" name="platform/system/extras" revision="6bdbd3017db9c36dea28f92568d4bc1b525ee9eb" />
+  <project path="system/extras" name="platform/system/extras" revision="2e9d437cb773e29c144df4e4480487879fe8202a" />
 
-  <project path="system/libbase" name="platform/system/libbase" revision="91a10d912827b818d0c1931ede3a2afaa93b18cd" />
+  <project path="system/libbase" name="platform/system/libbase" revision="3e6e44249aa066e3b15620ac355d640268afa985" />
 
   <project path="system/security" name="platform/system/security" revision="cc15f26ecddc5b060d2ab70a07bb3af11a980142" />
 
