@@ -1,11 +1,12 @@
 #!/bin/bash -e
 
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
     echo "usage: $0 <build number>"
     exit 1
 fi
+readonly BUILD_NUMBER="$1"
 
-readonly BUILD_NUMBER=$1
+readonly AOSP_BRANCH='kernel-build-tools-2022'
 
 cd "$(dirname $0)"
 
@@ -24,7 +25,7 @@ function finish {
 trap finish EXIT
 
 function fetch_artifact() {
-    /google/data/ro/projects/android/fetch_artifact --branch aosp_kernel-build-tools --bid ${BUILD_NUMBER} --target $1 "$2" "$3"
+    /google/data/ro/projects/android/fetch_artifact --branch "aosp_$AOSP_BRANCH" --bid ${BUILD_NUMBER} --target $1 "$2" "$3"
 }
 
 fetch_artifact linux build-prebuilts.zip "${tmpdir}/linux.zip"
@@ -41,8 +42,8 @@ unzip_to linux-x86 "${tmpdir}/linux.zip"
 cp -f "${tmpdir}/manifest.xml" manifest.xml
 
 git add manifest.xml linux-x86
-git commit -m "Update kernel-build-tools to ab/${BUILD_NUMBER}
+git commit -m "Update $AOSP_BRANCH to ab/${BUILD_NUMBER}
 
-https://ci.android.com/builds/branches/aosp_kernel-build-tools/grid?head=${BUILD_NUMBER}&tail=${BUILD_NUMBER}
+https://ci.android.com/builds/branches/aosp_$AOSP_BRANCH/grid?head=${BUILD_NUMBER}&tail=${BUILD_NUMBER}
 
 Test: treehugger"
