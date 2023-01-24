@@ -57,7 +57,7 @@
 
   <project path="external/libbpf" name="platform/external/libbpf" revision="f60dce0e55842ac7acfedb4a9a14dee74c803245" />
 
-  <project path="external/libabigail" name="platform/external/libabigail" revision="9a051ce8948dda10bef82b4f060e862be6555a6e" />
+  <project path="external/libabigail" name="platform/external/libabigail" revision="b0be93d8d82d1f40091823c4bd35711190d16762" />
 
   <project path="external/libcxx" name="platform/external/libcxx" revision="84d309aa8d72c9333e9c503cdbd692f0497fe174" />
 
