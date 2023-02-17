@@ -3,11 +3,11 @@
 <manifest>
   <remote name="aosp" fetch="https://android.googlesource.com/" review="https://android.googlesource.com/" />
 
-  <default revision="master" remote="aosp" sync-j="4" />
+  <default revision="build-tools-2022" remote="aosp" sync-j="4" />
 
-  <superproject name="kernel/superproject" remote="aosp" revision="build-tools" />
+  <superproject name="kernel/superproject" remote="aosp" revision="build-tools-2022" />
 
-  <project path="prebuilts/kernel-build-tools" name="kernel/prebuilts/build-tools" clone-depth="1" revision="db9c2a664b202698430f6e32ec576ba3c8296264" />
+  <project path="prebuilts/kernel-build-tools" name="kernel/prebuilts/build-tools" clone-depth="1" revision="0fb21fa343b2157c91e21b7ead1e99c1ea82125b" />
 
   <project path="build/blueprint" name="platform/build/blueprint" revision="8e5808e7470cbaf54807a1af54c8875ffc9870a5" />
 
@@ -37,7 +37,7 @@
 
   <project path="external/boringssl" name="platform/external/boringssl" revision="b9e46fc97b5fcb64f753fdba8e87cc50a819bae0" />
 
-  <project path="external/dwarves" name="platform/external/dwarves" revision="3c8f7e8b2cf7ff902b71c42d00fda30f30114b07" />
+  <project path="external/dwarves" name="platform/external/dwarves" revision="962126d1dade6b7968b588aab60c9193eeaa68ef" />
 
   <project path="external/e2fsprogs" name="platform/external/e2fsprogs" revision="b0470324bb553858a02569058f133aa536b379ed" />
 
